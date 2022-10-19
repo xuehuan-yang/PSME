@@ -21,7 +21,6 @@ from charm.toolbox.ABEncMultiAuth import ABEncMultiAuth
 import time
 import numpy as np
 from charm.toolbox.hash_module import Hash
-from charm.core.math.integer import int2Bytes
 import sys
 import string
 import random
@@ -120,8 +119,6 @@ class MJ18(ABEncMultiAuth):
         idj = idj_func(id_num)
         H2idjtemp = H2idj_func(idj)
         H2idj = cut_func(H2idjtemp, 2)
-        # print("enc H2idj: ", H2idj)
-
         ytemp = coeff_func(H2idj)
         ytest = yelement_func(ytemp)
         y = ytest
@@ -207,8 +204,7 @@ class MJ18(ABEncMultiAuth):
 def random_array(n):
     array = []
     for i in range(n):
-        temp = group.random(ZR)
-        array.append(temp)
+        array.append(group.random(ZR))
     return array
 
 
@@ -589,7 +585,7 @@ def main():
     groupObj = PairingGroup('SS512')
     # n_array = np.arange(5, 30, 5)
     n_array = [10]
-    output_txt = './aibbme.txt'
+    output_txt = './30_aibbme.txt'
     ahnipe = MJ18(groupObj)
 
     with open(output_txt, 'w+', encoding='utf-8') as f:
