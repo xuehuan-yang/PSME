@@ -4,22 +4,6 @@
 # group = PairingGroup('SS512', secparam=1024)
 #
 Shorter IBE and Signatures via Asymmetric Pairings
-  
-| From: "J. Chen, H. Lim, S. Ling, H. Wang, H. Wee Shorter IBE and Signatures via Asymmetric Pairings", Section 4.
-| Published in: Pairing 2012
-| Available from: http://eprint.iacr.org/2012/224
-| Notes: This is a shorter IBE construction based on SXDH construction.
-
-* type:           encryption (identity-based)
-* setting:        bilinear groups (asymmetric)
-
-:Authors:    Fan Zhang(zfwise@gwu.edu), supported by GWU computer science department
-:Date:       3/2013
-:Note: The implementation is different from what the paper described. 
-       Generally speaking,  instead of storing msk= { \alpha, g_2^{d_1^*}, g_2^{d_2^*} } as the master secret key, 
-       we stored \msk= \{ \alpha, d_1^*, d_2^* \}. And for the computation of sk_id, we first compute 
-       (\alpha + r ID)d_1^* - r \d_2^*$ then apply the exponential operation. This reduce the G2 exponentials from 8 to 4. 
-       This is the same trick we used in improving N04(Waters05) scheme.
 '''
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
 from charm.toolbox.matrixops import *

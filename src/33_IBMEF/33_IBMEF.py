@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-# message
 # https://github.com/cygnusv/matchmaking-encryption/blob/master/ibme.py
 # H0: {0, 1}* -> G0   H_prime()
 # H1: {0, 1}* -> G1   H_prime()
-# 'hello1234' -> '123456789'
-# '123456789' -> 'hello1234'
-# refer to VFPPBA
+
 
 # from charm.toolbox.hash_module import Hash
 # H = Hash(group)
@@ -15,7 +12,6 @@
 # H2: {0 ,1}* -> Zp  H.hashToZr()
 # H3: GT -> Zp       H.hashtoZn()
 # H4: phi = H.hashToZr(d1, d2, C1, C0, C2, C3)
-
 
 """
 import random
@@ -37,94 +33,69 @@ from common.msp import *
 class MJ18(ABEncMultiAuth):
     def __init__(self, groupObj, verbose=False):
         ABEncMultiAuth.__init__(self)
-        global group, ahnipe, util, H, mask, id_len, id_num, l, str_len, l1
-
+        global group, ahnipe, util, H, mask
         group = groupObj
         util = MSP(group, verbose=False)
         H = Hash(group)
         mask = 'ed27dbfb02752e0e16bc4502d6c732bc5f1cc92ba19b2d93a4e95c597ca42753e93550b52f82b6c13fb8cc0c2fc64487'
-        id_len = 2
-        id_num = 10
-        l = 20
-        str_len = 48
-        l1 = 15
+
 
     def setup_psbme(self, n):
         start = time.time()
         g = group.random(G1)
-        h, u, v, w = group.random(G2), group.random(G2), group.random(G2), group.random(G2)
-        alpha, beta, rou = group.random(ZR), group.random(ZR), group.random(ZR)
-        g1 = g ** rou
-        h0 = h ** rou
-        h1 = h ** beta
+        h = group.random(G2)
+        alpha, y = group.random(ZR, 2)
+        galpha = g ** alpha
+        h1 = h ** y
 
-        pp = {'g': g, 'g1': g1, 'u': u, 'v': v, 'w': w, 'h': h, 'h0': h0, 'h1': h1}
-        msk = {"rou": rou, 'alpha': alpha}
+        pp = {'g': g, 'galpha': galpha, 'h':h, 'h1': h1}
+        msk = {'alpha': alpha, 'y': y}
 
         end = time.time()
         rt = end - start
         return pp, msk, rt
 
-    def ekgen_psbme(self, msk, idstar):
+    def skgen_psbme(self, idstar):
         start = time.time()
 
-        ekid = H1(idstar) ** msk['alpha']
-        ek = {'ekid': ekid}
+        ek = {"idstar": idstar}
 
         end = time.time()
         rt = end - start
         return ek, rt
 
-    def dkgen_psbme(self, msk, id):
+    def rkgen_psbme(self, pp, msk, id):
         start = time.time()
-        dk1 = H0(id) ** msk["rou"]
-        dk2 = H0(id) ** msk["alpha"]
-        dk3 = H0(id)
-        dk = {'dk1': dk1, 'dk2': dk2, 'dk3': dk3}
+
+        H = Hash(group)
+        rho = H.hashToZr(id)
+        r = group.random(ZR)
+        hrho = pp["h"] ** ((msk['y'] - r) / (msk['alpha'] - rho))
+        # hrho = pp["g"] ** ((msk['y'] - r) / (msk['alpha'] - rho))
+        dk = {'r': r, 'hrho': hrho}
 
         end = time.time()
         rt = end - start
-
         return dk, rt
 
-    def enc_psbme(self, pp, ek):
+
+    def enc_psbme(self, pp, ek, id):
         start = time.time()
-        # generate message
-        m = "123456789"
+        m = group.random(GT)
         print("ori message: ", m)
-
-        s, d1, d2, sigma, tau = group.random(ZR), group.random(ZR), group.random(ZR), group.random(ZR), group.random(ZR)
-        d1, d1cut = cutd_func(d1, 2)
-        d2, d2cut = cutd_func(d2, 2)
-        print("d1cut: ", d1cut)
-        print("d2cut: ", d2cut)
-
-        C0 = pp['h'] ** s
-        C1 = pp['g'] ** s
-        C2 = pp['h1'] ** tau
-
-        C3temp = H3(d1, d2, C1, C0, C2)
-        C3 = C3_func(C3temp, m)
-
+        s = group.random(ZR)
+        x, enc_idstar = ext_func(pp, ek['idstar'])
         H = Hash(group)
-        phi = H.hashToZr(C1, C0, C2, C3)
-        print("enc phi: ", phi)
-        C4 = ((pp['u'] ** phi) * (pp['v'] ** sigma) * (pp['w'])) ** s
+        c1 = (pp['galpha'] * (pp['g'] ** (- H.hashToZr(id)))) ** s
+        c2 = pair(pp['g'], pp['h']) ** s
+        # c2 = pair(pp['g'], pp['g']) ** s
+        c3 = x
+        c4test = m * (pair(pp['g'], pp['h1']) ** (-s))
 
-        idj = idj_func(id_num)  # idj means S
+        c4 = m * (pair(pp['g'], pp['h1']) ** (-s))  * enc_idstar
+        # c4 = m * (pair(pp['g'], pp['h']) ** (-s))  * enc_idstar
+        ct = {'c1': c1, "c2": c2, 'c3': c3, 'c4': c4}
 
-        Uidtemp = Uid_func(pp, idj, s)
-        Uid = cut_func(Uidtemp, 2)
-        print("Uid[0]: ", Uid[0])
-
-        Vidtemp = Vid_func(ek, idj, C2)
-        Vid = cut_func(Vidtemp, 2)
-        print("Vid[0]: ", Vid[0])
-
-        an = fxgy_func(Uid, d1cut)
-        bn = fxgy_func(Vid, d2cut)
-
-        ct = {'sigma': sigma, 'C0': C0, 'C1': C1, 'C2': C2, 'C3': C3, 'C4': C4, 'an': an, 'bn': bn, 'idj': idj}
         end = time.time()
         rt = end - start
         return ct, m, rt
@@ -132,35 +103,14 @@ class MJ18(ABEncMultiAuth):
     def dec_psbme(self, pp, dk, idstar, ct):
         start = time.time()
 
-        phi = H.hashToZr(ct['C1'], ct["C0"], ct["C2"], ct['C3'])
+        a1 = pair(pp['g'], pp['h']) ** (H.hashToZr(idstar) * ct['c3'])
 
-        a1 = pair(ct['C1'], (pp['u'] ** phi) * (pp['v'] ** ct['sigma']) * pp["w"])
-        a2 = pair(pp['g'], ct['C4'])
-
-        if a1 == a2:
-            print("pair correct verification")
-
-            Uidtemp = H2(pair(ct['C0'], dk['dk1']))
-            Uid = int(str(Uidtemp)[:2])
-            Vidtemp = H2(pair(dk['dk3'], ct['C2']) * pair(dk['dk2'], H1(idstar)))
-            Vid = int(str(Vidtemp)[:2])
-
-            d1dec = ddec_func(ct['an'], Uid)
-            d2dec = ddec_func(ct['bn'], Vid)
-
-            a3 = str(ct["C3"][:str_len - l1])
-            c3l = str(ct["C3"][str_len - l1:str_len])
-            a4 = str(H3(d1dec, d2dec, ct['C1'], ct["C0"], ct['C2']))[:str_len - l1]
-            c4l = str(H3(d1dec, d2dec, ct['C1'], ct["C0"], ct['C2']))[str_len - l1: str_len]
-            if a3 == a4:
-                print("test dec successfully")
-                dec_msg = int(c4l) ^ int(c3l)
-                print("dec message:", dec_msg)
+        dec_msg = (ct['c4'] * pair(ct['c1'], dk['hrho'])) * (ct['c2'] ** dk['r']) /a1
+        print("dec_msg: ", dec_msg)
 
         end = time.time()
         rt = end - start
         return dec_msg, rt
-
 
 
 def random_array(n):
@@ -183,6 +133,12 @@ def R_func(n, g, rn):
     for i in range(n):
         Rn.append(g ** rn[i])
     return Rn
+
+
+def ext_func(pp, idstar):
+    x = group.random(ZR)
+    enc_idstar = pair(pp['g'], pp['h']) ** (x * H.hashToZr(idstar))
+    return x, enc_idstar
 
 
 def H0(X):
@@ -378,12 +334,6 @@ def C3prime_func(pp, s, ctag, y):
     return res
 
 
-# def Vid_func(pp, ek, idj, s):
-#     res = []
-#     for i in range(len(idj)):
-#         a1 = H0(idj[i])
-#         res.append(int(H2(pair(pp['h0'], a1))))
-#     return res
 
 
 def gN_function(n, g, alpha):
@@ -408,12 +358,11 @@ def FHash_function(pp, inputGT):
     return res
 
 
-
 def main():
     groupObj = PairingGroup('SS512')
     # n_array = np.arange(5, 30, 5)
     n_array = [10]
-    output_txt = './31_PSBME.txt'
+    output_txt = './33_IBMEF.txt'
     ahnipe = MJ18(groupObj)
 
     with open(output_txt, 'w+', encoding='utf-8') as f:
@@ -426,16 +375,18 @@ def main():
             for j in range(seq):
                 n = n_array[i]
                 idstar = 'hello1'
+                id = 'hello2'
 
                 pp, msk, setuptime = ahnipe.setup_psbme(n)
-                ek, ekgentime = ahnipe.ekgen_psbme(msk, idstar)
-                ct, m, enctime = ahnipe.enc_psbme(pp, ek)
-                dk, dkgentime = ahnipe.dkgen_psbme(msk, ct['idj'][0])
-                rec_msg1, dectime = ahnipe.dec_psbme(pp, dk, idstar, ct)
+                ek, ekgentime = ahnipe.skgen_psbme(idstar)
+                dk, rkgentime = ahnipe.rkgen_psbme(pp, msk, id)
+                ct, m, enctime = ahnipe.enc_psbme(pp, ek, id)
+                rec_msg, dectime = ahnipe.dec_psbme(pp, dk, idstar, ct)
+
 
                 print('\nn, seq:   ', n, j)
                 print("m:        ", m)
-                print("rec_msg1: ", rec_msg1)
+                print("rec_msg1: ", rec_msg)
                 # print("rec_msg2: ", rec_msg2)
 
                 # m_inputkey = group.serialize(m).decode("utf-8")
