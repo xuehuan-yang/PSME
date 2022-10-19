@@ -120,38 +120,36 @@ class MJ18(ABEncMultiAuth):
         H2idjtemp = H2idj_func(idj)
         H2idj = cut_func(H2idjtemp, 2)
         ytemp = coeff_func(H2idj)
-        ytest = yelement_func(ytemp)
-        y = ytest
-        print("enc y: ", y)
+        ye = yelement_func(ytemp)
+        y = yelement_func(ytemp)
+        # print("enc y: ", y)
 
-        # generate message
         m = group.random(GT)
-        print("ori message: ", m)
+        print("enc message: ", m)
 
         s, d2ori, ctag = group.random(ZR, 3)
         d2 = group.init(ZR, int(str(d2ori)[:5]))
-        print("enc d2: ", d2)
+        # print("enc d2: ", d2)
 
         C0 = m * pp['X'] ** s
         C1 = pp["g"] ** s
         C2 = pp["gb"] ** s
-        C3 = C3_func(pp, d2, s, ctag, ytest)
+        C3 = C3_func(pp, d2, s, ctag, ye)
         C4 = pp['v'] ** s
         Vidtemp = Vid_func(pp, ek, idj, s)
         Vid = cut_func(Vidtemp, 2)
-        print("enc Vid: ", Vid)
+        # print("enc Vid: ", Vid)
 
-        C3prime = C3prime_func(pp, s, ctag, y)
         vidtemp = coeff_func(Vid)
         vidtemp1 = vidtemp
         bk = bk_func(vidtemp1, d2)
 
         ct = {'C0': C0, 'C1': C1, 'C2': C2, 'C3': C3, 'C4': C4, 'ctag': ctag, 'bk': bk, 'idj': idj, 'd2': d2,
-              'C3prime': C3prime, 's': s, 'y':y}
+               's': s, 'y': y}
 
         end = time.time()
         rt = end - start
-        return ct, m, ytest, rt
+        return ct, m, rt
 
     def dec_aibbme(self, pp, idstar, ct, dk):
         start = time.time()
@@ -166,39 +164,11 @@ class MJ18(ABEncMultiAuth):
         B = B_func(ct, dk)
 
         dec_msg = ((A ** (1 / (rtagdec - ct['ctag']))) * ct['C0']) / B
-        print('dec message:', dec_msg)
-        
-        exit(0)
+        print('dec message: ', dec_msg)
+
         end = time.time()
         rt = end - start
         return dec_msg, rt
-
-    def rkgen_aibbme(self, n, pp, msk):
-        start = time.time()
-        sigma = group.random(ZR)
-        sprime = group.random(ZR)
-        d0 = (pp['g'] ** sigma) + FHash_function(pp, pp['e_gu'] ** sprime)
-
-        tempn = n
-        IDnprime = []
-        for i in range(tempn):
-            IDnprime.append('hello' + str(i + tempn))
-
-        temp = 1
-        temp2 = 1
-        for i in range(n):
-            temp = temp * (alpha + H.hashToZr(IDnprime[i]))
-            temp2 = temp2 * ((alpha + H.hashToZr(IDnprime[i])) / (H.hashToZr(IDnprime[i])))
-
-        d1 = pp['g'] ** (sprime * temp)
-        d2 = pp['miu1'] ** (-sprime)
-        d2prime = msk['miu'] ** (-sprime)
-
-        DK = {'d0': d0, 'd1': d1, 'd2': d2, 'd2prime': d2prime, 'sigma': sigma, 'IDnprime': IDnprime}
-
-        end = time.time()
-        ct = end - start
-        return DK, ct
 
 
 def random_array(n):
@@ -268,12 +238,12 @@ def rtagsn_func(n):
     return rtagsn
 
 
-def dk7_func( pp, rtagsn, id, z, ct):
+def dk7_func(pp, rtagsn, id, z, ct):
     dk7n = []
     H2idcut = group.init(ZR, int(str(H2(id))[:2]))
 
     for i in range(1, len(ct['y'])):
-        dk71 = (pp['ht1'] ** (rtagsn[i-1])) * pp['hr1n'][i]
+        dk71 = (pp['ht1'] ** (rtagsn[i - 1])) * pp['hr1n'][i]
         dk72 = pp['hr1n'][0] ** ((H2idcut) ** i)
         dk7n.append((dk71 / dk72) ** z)
 
@@ -291,16 +261,18 @@ def dk7test_func(pp, id, ct, rtagdec, dk):
 
     return a2
 
-def dk8_func( pp, rtagsn, id, z, ct):
+
+def dk8_func(pp, rtagsn, id, z, ct):
     dk8n = []
     H2idcut = group.init(ZR, int(str(H2(id))[:2]))
 
     for i in range(1, len(ct['y'])):
-        dk81 = (pp['ht2'] ** (rtagsn[i-1])) * pp['hr2n'][i]
+        dk81 = (pp['ht2'] ** (rtagsn[i - 1])) * pp['hr2n'][i]
         dk82 = pp['hr2n'][0] ** ((H2idcut) ** i)
         dk8n.append((dk81 / dk82) ** z)
 
     return dk8n
+
 
 # def dk8_func(pp, rtagsn, id, z, ct):
 #     dk8n = []
@@ -347,7 +319,7 @@ def coeff_func(H2idj):
         res = np.convolve(res, a2)
     rev = []
     for i in range(len(res)):
-        rev.append(res[len(res) - 1 - i ])
+        rev.append(res[len(res) - 1 - i])
     return rev
 
 
@@ -363,15 +335,6 @@ def Vidj_func(dk, ct, idstar):
     res = H3(a1 * a2 * a3)
     return res
 
-
-# def d2dec_func(ct, Vid):
-#     res = 1
-#     for i in range(len(ct['idj'])-1):
-#         res = res * (ct['bk'][i] * (int(Vid) ** i))
-#
-#     res = res + int(Vid) ** (len(ct['idj']))
-#     return res
-
 def ddec_func(ct, Vid):
     dd = 0
     for i in range(len(ct['bk'])):
@@ -379,13 +342,6 @@ def ddec_func(ct, Vid):
     res = int2elment(dd)
     return res
 
-
-# def ddec_func(an, Uid):
-#     dd = 0
-#     for i in range(len(an)):
-#         dd = dd + an[i] * (Uid ** (len(an) - i - 1))
-#     res = int2elment(dd)
-#     return res
 
 def int2elment(val):
     return group.init(ZR, int(val))
@@ -398,29 +354,23 @@ def rtagdec_func(ct, dk):
 
     ytemp = coeff_func(H2idj)
     y = yelement_func(ytemp)
-    print("dec y: ", y)
+    # print("dec y: ", y)
 
     res = 0
     for i in range(1, len(y)):
-        res = res + (dk['rtagsn'][i-1] * y[i])
+        res = res + (dk['rtagsn'][i - 1] * y[i])
     return res, y
-
-
 
 
 def A_func(pp, ct, dk, y, d2dec, idstar):
     A12 = 1
-    for i in range(len(y)-1):
-        A12 = A12 * (dk['dk7n'][i] ** y[i+1])
-    # A12test = A12test_func(pp, ct, dk)
-    dk7ny = dk7ny_func(pp, y, dk)
-    # test111 =  test111_func(pp, ct, dk, y, d2dec, idstar)
+    for i in range(len(y) - 1):
+        A12 = A12 * (dk['dk7n'][i] ** y[i + 1])
 
     a1 = pair(ct['C1'], A12)
     A22 = 1
-    for i in range(len(y)-1):
-        A22 = A22 * (dk['dk8n'][i] ** y[i+1])
-    # A22test = A22test_func(pp, ct, dk)
+    for i in range(len(y) - 1):
+        A22 = A22 * (dk['dk8n'][i] ** y[i + 1])
 
     a2 = pair(ct['C2'], A22)
     a3 = pair(ct['C3'] ** (1 / d2dec), dk['dk6'])
@@ -430,7 +380,7 @@ def A_func(pp, ct, dk, y, d2dec, idstar):
 def dk7ny_func(pp, y, dk):
     a1 = 0
     for i in range(1, len(y)):
-        a1 = a1 + (dk['rtagsn'][i-1] * y[i])
+        a1 = a1 + (dk['rtagsn'][i - 1] * y[i])
     a2 = pp['ht1'] ** a1
     a3 = 0
     for i in range(len(y)):
@@ -439,12 +389,13 @@ def dk7ny_func(pp, y, dk):
     a5 = (a2 * a4) ** dk["z"]
     return a5
 
+
 def test111_func(pp, ct, dk, y, d2dec, idstar):
     a1 = 0
     for i in range(1, len(y)):
-        a1  =  a1 + pp['r1ntest'][i] * y[i]
+        a1 = a1 + pp['r1ntest'][i] * y[i]
     a2 = pp["h"] ** a1
-    a3 = a2 /(pp['h'] ** (- pp['r1ntest'][0] * y[0]))
+    a3 = a2 / (pp['h'] ** (- pp['r1ntest'][0] * y[0]))
 
     a4 = 0
     for i in range(len(y)):
@@ -454,11 +405,10 @@ def test111_func(pp, ct, dk, y, d2dec, idstar):
     return a3
 
 
-
 def A12test_func(pp, ct, dk):
     a1 = 0
     for i in range(1, len(ct['y'])):
-        a1 = a1 + (dk['rtagsn'][i-1] * ct['y'][i])
+        a1 = a1 + (dk['rtagsn'][i - 1] * ct['y'][i])
     a2 = pp['ht1'] ** a1
     a3 = 0
     for i in range(len(ct['y'])):
@@ -466,6 +416,7 @@ def A12test_func(pp, ct, dk):
     a4 = pp['h'] ** a3
     a5 = (a2 * a4) ** dk['z']
     return a5
+
 
 def A22test_func(pp, ct, dk):
     a1 = 0
@@ -478,7 +429,6 @@ def A22test_func(pp, ct, dk):
     a4 = pp['h'] ** a3
     a5 = (a2 * a4) ** dk['z']
     return a5
-
 
 
 def B_func(ct, dk):
@@ -497,15 +447,6 @@ def Atest_func(pp, idstar, ct, dk):
     return a1 ** a3
 
 
-
-
-
-def Btest_func(pp, idstar, ct, dk):
-    a1 = pp['X']  ** ct["s"]
-    a2 = pair(pp['T'], pp['h']) ** (dk['z'] * ct['s'])
-    return a1 * a2
-
-
 def ypositive_func(ytemp):
     res = []
     for i in range(len(ytemp)):
@@ -515,12 +456,12 @@ def ypositive_func(ytemp):
             res.append(group.init(ZR, int(-ytemp[i])))
     return res
 
+
 def yelement_func(ytemp):
     res = []
     for i in range(len(ytemp)):
         res.append(group.init(ZR, int(ytemp[i])))
     return res
-
 
 
 def C3_func(pp, d2, s, ctag, y):
@@ -531,15 +472,6 @@ def C3_func(pp, d2, s, ctag, y):
     return res
 
 
-def C3prime_func(pp, s, ctag, y):
-    res = 1
-    for i in range(len(y)):
-        res = res * (pp['R'][i] ** y[i])
-
-    res = ((pp["T"] ** ctag) * res) ** s
-    return res
-
-
 def Vid_func(pp, ek, idj, s):
     res = []
     for i in range(len(idj)):
@@ -547,38 +479,6 @@ def Vid_func(pp, ek, idj, s):
         a2 = ek['ekid'] * (pp["gb"] ** s) * (pp['vrho'] ** s)
         res.append(int(H3(pair(a1, a2))))
     return res
-
-
-def gN_function(n, g, alpha):
-    res = []
-    for i in range(n):
-        res.append(g ** (alpha ** i))
-    return res
-
-
-def generate_random_str(length):
-    random_str = ''
-    base_str = 'helloworlddfafj23i4jri3jirj23idaf2485644f5551jeri23jeri23ji23'
-    for i in range(length):
-        random_str += base_str[random.randint(0, length - 1)]
-    return random_str
-
-
-def FHash_function(pp, inputGT):
-    equ1 = H.hashToZn(inputGT)
-    equ2 = H.hashToZr(equ1)
-    res = pp['g'] ** equ2
-    return res
-
-
-def temp_function(Snew, alpha):
-    temp1 = 1
-    temp2 = 1
-    for i in range(len(Snew)):
-        temp1 = temp1 * (alpha + H.hashToZr(Snew[i]))
-        temp2 = temp2 * (H.hashToZr(Snew[i]))
-
-    return temp1, temp2
 
 
 def main():
@@ -601,7 +501,7 @@ def main():
 
                 pp, msk, setuptime = ahnipe.setup_aibbme()
                 ek, ekgentime = ahnipe.ekgen_aibbme(msk, idstar)
-                ct, m, ytest, enctime = ahnipe.enc_aibbme(pp, ek)
+                ct, m, enctime = ahnipe.enc_aibbme(pp, ek)
                 dk, dkgentime = ahnipe.dkgen_aibbme(pp, msk, ct['idj'][0], ct)
                 rec_msg, dectime = ahnipe.dec_aibbme(pp, idstar, ct, dk)
 
