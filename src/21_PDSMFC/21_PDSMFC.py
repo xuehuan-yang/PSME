@@ -4,9 +4,6 @@ import pickle
 import base64
 import time
 
-debug = False
-
-
 class PDSMFC():
     def __init__(self, groupObj=None):
         if groupObj is None:
@@ -213,7 +210,6 @@ class PDSMFC():
 
 
 if __name__ == "__main__":
-    debug = True
     from charm.toolbox.pairinggroup import PairingGroup
 
     group = PairingGroup('SS512', secparam=512)
@@ -243,7 +239,7 @@ if __name__ == "__main__":
     ct_prime, transformtime = ME.transform(pp, at, ct)
     msg2 = ME.decrpt_second_level(pp, ct, ct_prime, sk56)
 
-    with open('../doc/21_pdsmfc.txt', 'w+', encoding='utf-8') as f:
+    with open('./21_PDSMFC.txt', 'w+', encoding='utf-8') as f:
         f.write("Seq SetupTime          EncTime            KeyGenTime         DecTime  " + '\n')
         setupTotal, enctimeTotal, authorizetransformTotal, dectimeTotal = 0.0, 0.0, 0.0, 0.0
         for i in range(n):
@@ -272,6 +268,6 @@ if __name__ == "__main__":
 
             f.write(str(i).zfill(2) + "  " + str(setuptime) + " " + str(enctime) + " " + str(format(temp, '.16f')) + " " + str(dectime))
             f.write('\n')
-            f.write(str(n).zfill(2) + "  " + str(format(setupTotal / n, '.16f')) + " " + str(
+        f.write(str(n).zfill(2) + "  " + str(format(setupTotal / n, '.16f')) + " " + str(
             format(enctimeTotal / n, '.16f')) + " " + str(format(authorizetransformTotal / n, '.16f')) + " " + str(
             format(dectimeTotal / n, '.16f')))
