@@ -32,6 +32,7 @@ import random
 sys.path.append('../')
 from common.image import *
 from common.msp import *
+from common.id import *
 
 
 class MJ18(ABEncMultiAuth):
@@ -152,29 +153,6 @@ class MJ18(ABEncMultiAuth):
         return dec_msg, rt
 
 
-
-def random_array(n):
-    array = []
-    for i in range(n):
-        temp = group.random(ZR)
-        array.append(temp)
-    return array
-
-
-def r_func(n, b, r1n, r2n):
-    r = []
-    for i in range(n):
-        r.append(r1n[i] + b * r2n[i])
-    return r
-
-
-def R_func(n, g, rn):
-    Rn = []
-    for i in range(n):
-        Rn.append(g ** rn[i])
-    return Rn
-
-
 def H0(X):
     X = bytes([a ^ b for (a, b) in zip(X.encode(), bytes.fromhex(mask))])
     return group.hash(X, G1)
@@ -198,45 +176,6 @@ def H3(X1, X2, X3, X4, X5):
     return H.hashToZn(a7)
 
 
-def hr1_func(n, h, r1n):
-    hr1n = []
-    for i in range(n):
-        hr1n.append(h ** r1n[i])
-    return hr1n
-
-
-def hr2_func(n, h, r2n):
-    hr2n = []
-    for i in range(n):
-        hr2n.append(h ** r2n[i])
-    return hr2n
-
-
-def rtagsn_func(n):
-    rtagsn = []
-    for i in range(n):
-        rtagsn.append(group.random(ZR))
-    return rtagsn
-
-
-def dk7_func(n, pp, rtagsn, id):
-    dk7n = []
-    for i in range(n):
-        dk71 = pp['ht1'] ** (rtagsn[i]) * pp['hr1n'][i]
-        dk72 = pp['hr1n'][0] ** ((H2(id)) ** n)
-        dk7n.append(dk71 / dk72)
-    return dk7n
-
-
-def dk8_func(n, pp, rtagsn, id):
-    dk8n = []
-    for i in range(n):
-        dk81 = pp['ht2'] ** (rtagsn[i]) * pp['hr2n'][i]
-        dk82 = pp['hr2n'][0] ** ((H2(id)) ** n)
-        dk8n.append(dk81 / dk82)
-    return dk8n
-
-
 def id_generate_func(len):
     res = ''.join(random.choices(string.ascii_uppercase +
                                  string.digits, k=len))
@@ -255,13 +194,6 @@ def fxgy_func(Vid, d1):
     temp = fx[len(fx) - 1] + int(d1)
     fx[len(fx) - 1] = temp
     return fx
-
-
-def H2idj_func(idj):
-    res = []
-    for i in range(len(idj)):
-        res.append(H2(idj[i]))
-    return res
 
 
 def cut_func(H2idjtemp, k):
@@ -285,11 +217,6 @@ def coeff_func(H2idj):
     return res
 
 
-def bk_func(vidtemp1, d2):
-    vidtemp1[len(vidtemp1) - 1] = vidtemp1[len(vidtemp1) - 1] + d2
-    return vidtemp1
-
-
 def Uid_func(pp, idj, s):
     res = []
     for i in range(len(idj)):
@@ -307,15 +234,6 @@ def Vid_func(ek, idj, C2):
     return res
 
 
-def d2dec_func(ct, Vid):
-    res = 1
-    for i in range(len(ct['idj']) - 1):
-        res = res * (ct['bk'][i] * (int(Vid) ** i))
-
-    res = res + int(Vid) ** (len(ct['idj']))
-    return res
-
-
 def ddec_func(an, Uid):
     dd = 0
     for i in range(len(an)):
@@ -328,67 +246,12 @@ def int2elment(val):
     return group.init(ZR, int(val))
 
 
-def rtagdec_func(ct, dk):
-    H2idjtemp = H2idj_func(ct['idj'])
-    H2idj = cut_func(H2idjtemp, 2)
-
-    ytemp = coeff_func(H2idj)
-    y = ypositive_func(ytemp)
-
-    res = 1
-    for i in range(len(y)):
-        res = res * (y[i] * dk['rtagsn'][i])
-    return res, y
-
-
-def ypositive_func(ytemp):
-    res = []
-    for i in range(len(ytemp)):
-        if ytemp[i] >= 0:
-            res.append(group.init(ZR, int(ytemp[i])))
-        else:
-            res.append(group.init(ZR, int(-ytemp[i])))
-    return res
-
-
 def C3_func(C3temp, m):
     n0 = str_len - l1
     C31 = str(C3temp)[0:n0]
     C32 = str(C3temp)[n0:str_len]
     C3 = C31 + str(int(C32) ^ int(m))
     return C3
-
-
-def C3prime_func(pp, s, ctag, y):
-    res = 1
-    for i in range(len(y)):
-        res = res * (pp['R'][i] ** y[i])
-
-    res = (pp["T"] ** ctag) * res ** s
-    return res
-
-
-def gN_function(n, g, alpha):
-    res = []
-    for i in range(n):
-        res.append(g ** (alpha ** i))
-    return res
-
-
-def generate_random_str(length):
-    random_str = ''
-    base_str = 'helloworlddfafj23i4jri3jirj23idaf2485644f5551jeri23jeri23ji23'
-    for i in range(length):
-        random_str += base_str[random.randint(0, length - 1)]
-    return random_str
-
-
-def FHash_function(pp, inputGT):
-    equ1 = H.hashToZn(inputGT)
-    equ2 = H.hashToZr(equ1)
-    res = pp['g'] ** equ2
-    return res
-
 
 
 def main():
@@ -399,14 +262,15 @@ def main():
     ahnipe = MJ18(groupObj)
 
     with open(output_txt, 'w+', encoding='utf-8') as f:
-        f.write("Seq SetupAveTime       ekgenAveTime       EncAveTime         dkgenAVeTime       decAveTime        " + '\n')
+        f.write(
+            "Seq SetupAveTime       ekgenAveTime       EncAveTime         dkgenAVeTime       decAveTime        " + '\n')
 
         for i in range(len(n_array)):
             seq = 1
             sttot, ekgentot, enctot, dkgentot, dectot = 0.0, 0.0, 0.0, 0.0, 0.0
             for j in range(seq):
                 n = n_array[i]
-                idstar = 'hello1'
+                idstar = id_generator(n)
 
                 pp, msk, setuptime = ahnipe.setup_psbme(n)
                 ek, ekgentime = ahnipe.ekgen_psbme(msk, idstar)
@@ -426,7 +290,7 @@ def main():
                 # image.encrypt(m_inputkey)
                 # image.decrypt(m_outputkey)
 
-                sttot, ekgentot, enctot, dkgentot, dectot= sttot+setuptime, ekgentot+ekgentime, enctot + enctime, dkgentot+ekgentime, dectot+dectime
+                sttot, ekgentot, enctot, dkgentot, dectot = sttot + setuptime, ekgentot + ekgentime, enctot + enctime, dkgentot + ekgentime, dectot + dectime
 
             out0 = str(n).zfill(2)
             out1 = str(format(sttot / float(seq), '.16f'))

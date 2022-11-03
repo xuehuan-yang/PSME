@@ -28,6 +28,7 @@ import random
 sys.path.append('../')
 from common.image import *
 from common.msp import *
+from common.id import *
 
 
 class MJ18(ABEncMultiAuth):
@@ -139,7 +140,7 @@ class MJ18(ABEncMultiAuth):
         bk = bk_func(vidtemp1, d2)
 
         ct = {'C0': C0, 'C1': C1, 'C2': C2, 'C3': C3, 'C4': C4, 'ctag': ctag, 'bk': bk, 'idj': idj, 'd2': d2,
-               's': s, 'y': y}
+              's': s, 'y': y}
 
         end = time.time()
         rt = end - start
@@ -153,10 +154,8 @@ class MJ18(ABEncMultiAuth):
         d2dec = ddec_func(ct, Vid)
 
         rtagdec, y = rtagdec_func(ct, dk)
-
         A = A_func(pp, ct, dk, y, d2dec, idstar)
         B = B_func(ct, dk)
-
         dec_msg = ((A ** (1 / (rtagdec - ct['ctag']))) * ct['C0']) / B
 
         end = time.time()
@@ -243,18 +242,6 @@ def dk7_func(pp, rtagsn, id, z, ct):
     return dk7n
 
 
-def dk7test_func(pp, id, ct, rtagdec, dk):
-    a1 = 0
-
-    for i in range(1, len(ct['y'])):
-        a1 = a1 + (dk['rtagsn'][i - 1]) * ct['y'][i]
-
-    a2 = pp['ht1'] ** a1
-    a3 = pp['ht1'] ** rtagdec
-
-    return a2
-
-
 def dk8_func(pp, rtagsn, id, z, ct):
     dk8n = []
     H2idcut = group.init(ZR, int(str(H2(id))[:2]))
@@ -265,17 +252,6 @@ def dk8_func(pp, rtagsn, id, z, ct):
         dk8n.append((dk81 / dk82) ** z)
 
     return dk8n
-
-
-# def dk8_func(pp, rtagsn, id, z, ct):
-#     dk8n = []
-#     H2idcut = group.init(ZR, int(str(H2(id))[:2]))
-#
-#     for i in range(1, len(ct['y'])):
-#         dk81 = (pp['ht2'] ** (rtagsn[i-1])) * pp['hr2n'][i]
-#         dk82 = pp['hr2n'][0] ** ((H2idcut) ** i)
-#         dk8n.append((dk81 / dk82) ** z)
-#     return dk8n
 
 
 def id_generate_func(len):
@@ -328,6 +304,7 @@ def Vidj_func(dk, ct, idstar):
     res = H3(a1 * a2 * a3)
     return res
 
+
 def ddec_func(ct, Vid):
     dd = 0
     for i in range(len(ct['bk'])):
@@ -370,83 +347,8 @@ def A_func(pp, ct, dk, y, d2dec, idstar):
     return a1 * a2 / a3
 
 
-def dk7ny_func(pp, y, dk):
-    a1 = 0
-    for i in range(1, len(y)):
-        a1 = a1 + (dk['rtagsn'][i - 1] * y[i])
-    a2 = pp['ht1'] ** a1
-    a3 = 0
-    for i in range(len(y)):
-        a3 = a3 + pp['r1ntest'][i] ** y[i]
-    a4 = pp['h'] ** a3
-    a5 = (a2 * a4) ** dk["z"]
-    return a5
-
-
-def test111_func(pp, ct, dk, y, d2dec, idstar):
-    a1 = 0
-    for i in range(1, len(y)):
-        a1 = a1 + pp['r1ntest'][i] * y[i]
-    a2 = pp["h"] ** a1
-    a3 = a2 / (pp['h'] ** (- pp['r1ntest'][0] * y[0]))
-
-    a4 = 0
-    for i in range(len(y)):
-        a4 = a4 + pp['r1ntest'][i] * y[i]
-    a5 = pp["h"] ** a4
-
-    return a3
-
-
-def A12test_func(pp, ct, dk):
-    a1 = 0
-    for i in range(1, len(ct['y'])):
-        a1 = a1 + (dk['rtagsn'][i - 1] * ct['y'][i])
-    a2 = pp['ht1'] ** a1
-    a3 = 0
-    for i in range(len(ct['y'])):
-        a3 = a3 + pp['r1ntest'][i] ** ct['y'][i]
-    a4 = pp['h'] ** a3
-    a5 = (a2 * a4) ** dk['z']
-    return a5
-
-
-def A22test_func(pp, ct, dk):
-    a1 = 0
-    for i in range(1, len(ct['y'])):
-        a1 = a1 + (dk['rtagsn'][i - 1] * ct['y'][i])
-    a2 = pp['ht2'] ** a1
-    a3 = 0
-    for i in range(len(ct['y'])):
-        a3 = a3 + pp['r2ntest'][i] ** ct['y'][i]
-    a4 = pp['h'] ** a3
-    a5 = (a2 * a4) ** dk['z']
-    return a5
-
-
 def B_func(ct, dk):
     res = pair(ct['C1'], dk['dk4']) * pair(ct['C2'], dk['dk5'])
-    return res
-
-
-def Atest_func(pp, idstar, ct, dk):
-    a1 = pair(pp['T'], pp['h'])
-    a2 = 0
-    for i in range(1, len(ct['y'])):
-        a2 = a2 + (dk['rtagsn'][i] * ct['y'][i])
-    ktag = a2
-    a3 = (ktag - ct['ctag']) * ct['s'] * dk['z']
-    print("ktag - ct['ctag']: ", ktag - ct['ctag'])
-    return a1 ** a3
-
-
-def ypositive_func(ytemp):
-    res = []
-    for i in range(len(ytemp)):
-        if ytemp[i] >= 0:
-            res.append(group.init(ZR, int(ytemp[i])))
-        else:
-            res.append(group.init(ZR, int(-ytemp[i])))
     return res
 
 
@@ -476,24 +378,24 @@ def Vid_func(pp, ek, idj, s):
 
 def main():
     groupObj = PairingGroup('SS512')
-    n_array = np.arange(6, 16, 1)
+    n_array = np.arange(10, 14, 1)
     output_txt = './30_aibbme.txt'
     ahnipe = MJ18(groupObj)
 
     with open(output_txt, 'w+', encoding='utf-8') as f:
         f.write(
-            "Seq SetupAveTime       ekgenAveTime       EncAveTime         dkgenAVeTime       decAveTime        "+ '\n')
+            "Seq SetupAveTime       ekgenAveTime       EncAveTime         dkgenAVeTime       decAveTime        " + '\n')
 
         for i in range(len(n_array)):
             seq = 1
             sttot, ekgentot, enctot, dkgentot, dectot = 0.0, 0.0, 0.0, 0.0, 0.0
             for j in range(seq):
                 n = n_array[i]
-                idstar = 'hello123'
+                idstar = id_generator(n)
 
                 pp, msk, setuptime = ahnipe.setup_aibbme()
                 ek, ekgentime = ahnipe.ekgen_aibbme(msk, idstar)
-                ct, m, enctime = ahnipe.enc_aibbme(pp, ek,n)
+                ct, m, enctime = ahnipe.enc_aibbme(pp, ek, n)
                 dk, dkgentime = ahnipe.dkgen_aibbme(pp, msk, ct['idj'][0], ct)
                 rec_msg, dectime = ahnipe.dec_aibbme(pp, idstar, ct, dk)
 
@@ -508,7 +410,7 @@ def main():
                 # image.encrypt(m_inputkey)
                 # image.decrypt(m_outputkey)
 
-                sttot, ekgentot, enctot, dkgentot, dectot= sttot+setuptime, ekgentot+ekgentime, enctot + enctime, dkgentot+ekgentime, dectot+dectime
+                sttot, ekgentot, enctot, dkgentot, dectot = sttot + setuptime, ekgentot + ekgentime, enctot + enctime, dkgentot + ekgentime, dectot + dectime
 
             out0 = str(n).zfill(2)
             out1 = str(format(sttot / float(seq), '.16f'))

@@ -11,6 +11,7 @@ from charm.toolbox.IBEnc import IBEnc
 import copy
 import time
 
+
 class IBE_Chen12_z(IBEnc):
 
     def __init__(self, groupObj):
@@ -26,10 +27,10 @@ class IBE_Chen12_z(IBEnc):
         alpha = group.random(ZR)
         eta = group.random(ZR)
 
-        d1n, d2n, d3n, d4n, d5n, d6n,d7n, d8n = dnn_func()
+        d1n, d2n, d3n, d4n, d5n, d6n, d7n, d8n = dnn_func()
         one = group.random(ZR)
 
-        D1n, D2n, D3n, D4n = Dn_func(d1n, d2n,d3n, d4n, d5n, d6n, d7n,d8n, one)
+        D1n, D2n, D3n, D4n = Dn_func(d1n, d2n, d3n, d4n, d5n, d6n, d7n, d8n, one)
 
         PP2 = (pair(g1, g2)) ** (alpha * one)
         PP3 = (pair(g1, g2)) ** (eta * one)
@@ -68,7 +69,7 @@ class IBE_Chen12_z(IBEnc):
         s, s1, s2 = group.random(ZR, 3)
         sk_id1n = sk_id1n_func(msk, _IDstar, s, s1)
         sk_id2n = sk_id2n_func(msk, _IDstar, s, s2)
-        sk_id3 =  pk['PP3'] ** s
+        sk_id3 = pk['PP3'] ** s
         sk = {'sk_id1n': sk_id1n, 'sk_id2n': sk_id2n, 'sk_id3': sk_id3}
 
         end = time.time()
@@ -88,21 +89,23 @@ class IBE_Chen12_z(IBEnc):
         rt = end - start
         return ct, rt
 
-    def decrypt(self, sk,  ID,  ct):
+    def decrypt(self, sk, ID, ct):
         start = time.time()
         _ID = group.hash(ID)
-        a1 =a1_func(sk, _ID, ct)
+        a1 = a1_func(sk, _ID, ct)
         Mprime = ct['C0'] * sk['sk_id3'] / a1
 
         end = time.time()
         rt = end - start
         return Mprime, rt
 
+
 def dn_func():
     res = []
     for i in range(n):
         res.append(group.random(ZR))
     return res
+
 
 def dnn_func():
     d1n = dn_func()
@@ -117,8 +120,9 @@ def dnn_func():
     return d1n, d2n, d3n, d4n, d5n, d6n, d7n, d8n
 
 
-def Dn_func(d1n, d2n,d3n, d4n, d5n, d6n, d7n,d8n, one):
-    d1n_, d2n_, d3n_, d4n_, d5n_, d6n_, d7n_, d8n_ = copy.copy(d1n), copy.copy(d2n), copy.copy(d3n), copy.copy(d4n), copy.copy(d5n), copy.copy(d6n), copy.copy(d7n), copy.copy(d8n)
+def Dn_func(d1n, d2n, d3n, d4n, d5n, d6n, d7n, d8n, one):
+    d1n_, d2n_, d3n_, d4n_, d5n_, d6n_, d7n_, d8n_ = copy.copy(d1n), copy.copy(d2n), copy.copy(d3n), copy.copy(
+        d4n), copy.copy(d5n), copy.copy(d6n), copy.copy(d7n), copy.copy(d8n)
     d1n_.append(group.init(ZR, 0))
     d2n_.append(group.init(ZR, 0))
     d3n_.append(group.init(ZR, 0))
@@ -141,6 +145,7 @@ def Dn_func(d1n, d2n,d3n, d4n, d5n, d6n, d7n,d8n, one):
 
     return D1n, D2n, D3n, D4n
 
+
 def gd_func(g1, d1n):
     res = []
     for i in range(n):
@@ -149,7 +154,7 @@ def gd_func(g1, d1n):
 
 
 def ek_id_func(msk, _ID, r):
-    res =[]
+    res = []
     for i in range(n):
         res.append(msk['gd3n'][i] ** (msk['eta'] + r * _ID) / (msk['gd4n'][i] ** r))
     return res
@@ -158,7 +163,8 @@ def ek_id_func(msk, _ID, r):
 def sk_id1n_func(msk, _IDstar, s, s1):
     res = []
     for i in range(n):
-        res.append(msk['g2'] ** (msk['D1n'][i] * (msk['alpha'] + s1 * _IDstar) - s1 * msk['D2n'][i] + s * msk['D3n'][i]))
+        res.append(
+            msk['g2'] ** (msk['D1n'][i] * (msk['alpha'] + s1 * _IDstar) - s1 * msk['D2n'][i] + s * msk['D3n'][i]))
     return res
 
 
@@ -195,14 +201,16 @@ def main():
     msg = group.random(GT)
     print("ori message: ", msg)
     ct, enctime = ibe.encrypt(pk, ek, IDstar, msg)
-    dec_msg, dectime = ibe.decrypt(sk, ID,  ct)
+    dec_msg, dectime = ibe.decrypt(sk, ID, ct)
     print("dec message: ", dec_msg)
     print(dec_msg == msg)
 
     output_txt = './32_IBMECH.txt'
     with open(output_txt, 'w+', encoding='utf-8') as f:
-        f.write("Seq SetupAveTime       ekgenAveTime       rkgenAveTime       encAveTime         decAveTime        " + '\n')
-        f.write(str(n).zfill(2) + '  ' + str(setuptime) + ' ' + str(skgentime) + ' ' + str(rkgentime) + ' ' + str(enctime) + ' ' + str(dectime))
+        f.write(
+            "Seq SetupAveTime       ekgenAveTime       rkgenAveTime       encAveTime         decAveTime        " + '\n')
+        f.write(str(n).zfill(2) + '  ' + str(setuptime) + ' ' + str(skgentime) + ' ' + str(rkgentime) + ' ' + str(
+            enctime) + ' ' + str(dectime))
         f.write('\n')
 
 
