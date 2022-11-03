@@ -90,7 +90,7 @@ class MJ18(ABEncMultiAuth):
     def enc_psbme(self, pp, ek, id_num):
         start = time.time()
 
-        m = "123456789"
+        m = id_generator_digits(id_num)
         s, d1, d2, sigma, tau = group.random(ZR), group.random(ZR), group.random(ZR), group.random(ZR), group.random(ZR)
         d1, d1cut = cutd_func(d1, 2)
         d2, d2cut = cutd_func(d2, 2)
