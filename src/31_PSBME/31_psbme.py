@@ -37,15 +37,14 @@ from common.msp import *
 class MJ18(ABEncMultiAuth):
     def __init__(self, groupObj, verbose=False):
         ABEncMultiAuth.__init__(self)
-        global group, ahnipe, util, H, mask, id_len, id_num, l, str_len, l1
+        global group, ahnipe, util, H, mask, id_len, l, str_len, l1
 
         group = groupObj
         util = MSP(group, verbose=False)
         H = Hash(group)
         mask = 'ed27dbfb02752e0e16bc4502d6c732bc5f1cc92ba19b2d93a4e95c597ca42753e93550b52f82b6c13fb8cc0c2fc64487'
         id_len = 2
-        id_num = 10
-        l = 20
+        l = 50
         str_len = 48
         l1 = 15
 
@@ -87,17 +86,13 @@ class MJ18(ABEncMultiAuth):
 
         return dk, rt
 
-    def enc_psbme(self, pp, ek):
+    def enc_psbme(self, pp, ek, id_num):
         start = time.time()
-        # generate message
-        m = "123456789"
-        print("ori message: ", m)
 
+        m = "123456789"
         s, d1, d2, sigma, tau = group.random(ZR), group.random(ZR), group.random(ZR), group.random(ZR), group.random(ZR)
         d1, d1cut = cutd_func(d1, 2)
         d2, d2cut = cutd_func(d2, 2)
-        print("d1cut: ", d1cut)
-        print("d2cut: ", d2cut)
 
         C0 = pp['h'] ** s
         C1 = pp['g'] ** s
@@ -108,18 +103,15 @@ class MJ18(ABEncMultiAuth):
 
         H = Hash(group)
         phi = H.hashToZr(C1, C0, C2, C3)
-        print("enc phi: ", phi)
         C4 = ((pp['u'] ** phi) * (pp['v'] ** sigma) * (pp['w'])) ** s
 
         idj = idj_func(id_num)  # idj means S
 
         Uidtemp = Uid_func(pp, idj, s)
         Uid = cut_func(Uidtemp, 2)
-        print("Uid[0]: ", Uid[0])
 
         Vidtemp = Vid_func(ek, idj, C2)
         Vid = cut_func(Vidtemp, 2)
-        print("Vid[0]: ", Vid[0])
 
         an = fxgy_func(Uid, d1cut)
         bn = fxgy_func(Vid, d2cut)
@@ -138,8 +130,7 @@ class MJ18(ABEncMultiAuth):
         a2 = pair(pp['g'], ct['C4'])
 
         if a1 == a2:
-            print("pair correct verification")
-
+            # print("pair correct verification")
             Uidtemp = H2(pair(ct['C0'], dk['dk1']))
             Uid = int(str(Uidtemp)[:2])
             Vidtemp = H2(pair(dk['dk3'], ct['C2']) * pair(dk['dk2'], H1(idstar)))
@@ -153,9 +144,8 @@ class MJ18(ABEncMultiAuth):
             a4 = str(H3(d1dec, d2dec, ct['C1'], ct["C0"], ct['C2']))[:str_len - l1]
             c4l = str(H3(d1dec, d2dec, ct['C1'], ct["C0"], ct['C2']))[str_len - l1: str_len]
             if a3 == a4:
-                print("test dec successfully")
+                # print("test dec successfully")
                 dec_msg = int(c4l) ^ int(c3l)
-                print("dec message:", dec_msg)
 
         end = time.time()
         rt = end - start
@@ -378,14 +368,6 @@ def C3prime_func(pp, s, ctag, y):
     return res
 
 
-# def Vid_func(pp, ek, idj, s):
-#     res = []
-#     for i in range(len(idj)):
-#         a1 = H0(idj[i])
-#         res.append(int(H2(pair(pp['h0'], a1))))
-#     return res
-
-
 def gN_function(n, g, alpha):
     res = []
     for i in range(n):
@@ -411,52 +393,48 @@ def FHash_function(pp, inputGT):
 
 def main():
     groupObj = PairingGroup('SS512')
-    # n_array = np.arange(5, 30, 5)
-    n_array = [10]
+    n_array = np.arange(2, 30, 1)
+    # n_array = [10]
     output_txt = './31_PSBME.txt'
     ahnipe = MJ18(groupObj)
 
     with open(output_txt, 'w+', encoding='utf-8') as f:
-        f.write(
-            "Seq SetupAveTime       KeygenAveTime      EncAveTime         Dec1AVeTime        RekeygenAveTime    ReencAveTime       Dec2AveTime   " + '\n')
+        f.write("Seq SetupAveTime       ekgenAveTime       EncAveTime         dkgenAVeTime       decAveTime        " + '\n')
 
         for i in range(len(n_array)):
-            seq = 5
-            sttot, kgtot, enctot, dec1tot, rktot, retot, dec2tot = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+            seq = 1
+            sttot, ekgentot, enctot, dkgentot, dectot = 0.0, 0.0, 0.0, 0.0, 0.0
             for j in range(seq):
                 n = n_array[i]
                 idstar = 'hello1'
 
                 pp, msk, setuptime = ahnipe.setup_psbme(n)
                 ek, ekgentime = ahnipe.ekgen_psbme(msk, idstar)
-                ct, m, enctime = ahnipe.enc_psbme(pp, ek)
+                ct, m, enctime = ahnipe.enc_psbme(pp, ek, n)
                 dk, dkgentime = ahnipe.dkgen_psbme(msk, ct['idj'][0])
-                rec_msg1, dectime = ahnipe.dec_psbme(pp, dk, idstar, ct)
+                rec_msg, dectime = ahnipe.dec_psbme(pp, dk, idstar, ct)
 
                 print('\nn, seq:   ', n, j)
-                print("m:        ", m)
-                print("rec_msg1: ", rec_msg1)
-                # print("rec_msg2: ", rec_msg2)
+                print("m:       ", m)
+                print("rec_msg: ", rec_msg)
 
                 # m_inputkey = group.serialize(m).decode("utf-8")
                 # m_inputkey = group.serialize(m).decode("utf-8")
-                # m_outputkey = group.serialize(rec_msg1).decode("utf-8")
+                # m_outputkey = group.serialize(rec_msg).decode("utf-8")
                 # encrypt(m_inputkey)
                 # decrypt(m_outputkey)
                 # image.encrypt(m_inputkey)
                 # image.decrypt(m_outputkey)
 
-                # sttot, kgtot, enctot, dec1tot, rktot, retot, dec2tot = sttot + setuptime, kgtot + keygen1time + keygen2time, enctot + enctime, dec1tot + dec1time, rktot + rkgentime, retot + reenctime, dec2tot + dec2time
+                sttot, ekgentot, enctot, dkgentot, dectot= sttot+setuptime, ekgentot+ekgentime, enctot + enctime, dkgentot+ekgentime, dectot+dectime
 
             out0 = str(n).zfill(2)
             out1 = str(format(sttot / float(seq), '.16f'))
-            out2 = str(format(kgtot / float(seq), '.16f'))
+            out2 = str(format(ekgentot / float(seq), '.16f'))
             out3 = str(format(enctot / float(seq), '.16f'))
-            out4 = str(format(dec1tot / float(seq), '.16f'))
-            out5 = str(format(rktot / float(seq), '.16f'))
-            out6 = str(format(retot / float(seq), '.16f'))
-            out7 = str(format(dec2tot / float(seq), '.16f'))
-            f.write(out0 + '  ' + out1 + ' ' + out2 + ' ' + out3 + ' ' + out4 + ' ' + out5 + ' ' + out6 + ' ' + out7)
+            out4 = str(format(dkgentot / float(seq), '.16f'))
+            out5 = str(format(dectot / float(seq), '.16f'))
+            f.write(out0 + '  ' + out1 + ' ' + out2 + ' ' + out3 + ' ' + out4 + ' ' + out5)
             f.write('\n')
 
 

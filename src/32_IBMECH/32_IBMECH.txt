@@ -1,0 +1,2 @@
+Seq SetupAveTime       ekgenAveTime       rkgenAveTime       encAveTime         decAveTime        
+08  0.1942920684814453 0.021948575973510742 0.025664806365966797 0.021010637283325195 0.01587677001953125

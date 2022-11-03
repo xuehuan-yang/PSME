@@ -33,15 +33,14 @@ from common.msp import *
 class MJ18(ABEncMultiAuth):
     def __init__(self, groupObj, verbose=False):
         ABEncMultiAuth.__init__(self)
-        global group, ahnipe, util, H, mask, id_len, id_num, l
+        global group, ahnipe, util, H, mask, id_len, l
 
         group = groupObj
         util = MSP(group, verbose=False)
         H = Hash(group)
         mask = 'ed27dbfb02752e0e16bc4502d6c732bc5f1cc92ba19b2d93a4e95c597ca42753e93550b52f82b6c13fb8cc0c2fc64487'
         id_len = 2
-        id_num = 10
-        l = 20
+        l = 50
 
     def setup_aibbme(self):
         start = time.time()
@@ -113,7 +112,7 @@ class MJ18(ABEncMultiAuth):
 
         return dk, rt
 
-    def enc_aibbme(self, pp, ek):
+    def enc_aibbme(self, pp, ek, id_num):
         start = time.time()
 
         idj = idj_func(id_num)
@@ -122,14 +121,10 @@ class MJ18(ABEncMultiAuth):
         ytemp = coeff_func(H2idj)
         ye = yelement_func(ytemp)
         y = yelement_func(ytemp)
-        # print("enc y: ", y)
 
         m = group.random(GT)
-        print("enc message: ", m)
-
         s, d2ori, ctag = group.random(ZR, 3)
         d2 = group.init(ZR, int(str(d2ori)[:5]))
-        # print("enc d2: ", d2)
 
         C0 = m * pp['X'] ** s
         C1 = pp["g"] ** s
@@ -138,7 +133,6 @@ class MJ18(ABEncMultiAuth):
         C4 = pp['v'] ** s
         Vidtemp = Vid_func(pp, ek, idj, s)
         Vid = cut_func(Vidtemp, 2)
-        # print("enc Vid: ", Vid)
 
         vidtemp = coeff_func(Vid)
         vidtemp1 = vidtemp
@@ -164,7 +158,6 @@ class MJ18(ABEncMultiAuth):
         B = B_func(ct, dk)
 
         dec_msg = ((A ** (1 / (rtagdec - ct['ctag']))) * ct['C0']) / B
-        print('dec message: ', dec_msg)
 
         end = time.time()
         rt = end - start
@@ -483,32 +476,30 @@ def Vid_func(pp, ek, idj, s):
 
 def main():
     groupObj = PairingGroup('SS512')
-    # n_array = np.arange(5, 30, 5)
-    n_array = [10]
+    n_array = np.arange(6, 16, 1)
     output_txt = './30_aibbme.txt'
     ahnipe = MJ18(groupObj)
 
     with open(output_txt, 'w+', encoding='utf-8') as f:
         f.write(
-            "Seq SetupAveTime       KeygenAveTime      EncAveTime         Dec1AVeTime        RekeygenAveTime    ReencAveTime       Dec2AveTime   " + '\n')
+            "Seq SetupAveTime       ekgenAveTime       EncAveTime         dkgenAVeTime       decAveTime        "+ '\n')
 
         for i in range(len(n_array)):
-            seq = 5
-            sttot, kgtot, enctot, dec1tot, rktot, retot, dec2tot = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+            seq = 1
+            sttot, ekgentot, enctot, dkgentot, dectot = 0.0, 0.0, 0.0, 0.0, 0.0
             for j in range(seq):
                 n = n_array[i]
                 idstar = 'hello123'
 
                 pp, msk, setuptime = ahnipe.setup_aibbme()
                 ek, ekgentime = ahnipe.ekgen_aibbme(msk, idstar)
-                ct, m, enctime = ahnipe.enc_aibbme(pp, ek)
+                ct, m, enctime = ahnipe.enc_aibbme(pp, ek,n)
                 dk, dkgentime = ahnipe.dkgen_aibbme(pp, msk, ct['idj'][0], ct)
                 rec_msg, dectime = ahnipe.dec_aibbme(pp, idstar, ct, dk)
 
                 print('\nn, seq:   ', n, j)
                 print("m:        ", m)
                 print("rec_msg1: ", rec_msg)
-                # print("rec_msg2: ", rec_msg2)
 
                 # m_inputkey = group.serialize(m).decode("utf-8")
                 # m_outputkey = group.serialize(rec_msg1).decode("utf-8")
@@ -517,17 +508,15 @@ def main():
                 # image.encrypt(m_inputkey)
                 # image.decrypt(m_outputkey)
 
-                # sttot, kgtot, enctot, dec1tot, rktot, retot, dec2tot = sttot + setuptime, kgtot + keygen1time + keygen2time, enctot + enctime, dec1tot + dec1time, rktot + rkgentime, retot + reenctime, dec2tot + dec2time
+                sttot, ekgentot, enctot, dkgentot, dectot= sttot+setuptime, ekgentot+ekgentime, enctot + enctime, dkgentot+ekgentime, dectot+dectime
 
             out0 = str(n).zfill(2)
             out1 = str(format(sttot / float(seq), '.16f'))
-            out2 = str(format(kgtot / float(seq), '.16f'))
+            out2 = str(format(ekgentot / float(seq), '.16f'))
             out3 = str(format(enctot / float(seq), '.16f'))
-            out4 = str(format(dec1tot / float(seq), '.16f'))
-            out5 = str(format(rktot / float(seq), '.16f'))
-            out6 = str(format(retot / float(seq), '.16f'))
-            out7 = str(format(dec2tot / float(seq), '.16f'))
-            f.write(out0 + '  ' + out1 + ' ' + out2 + ' ' + out3 + ' ' + out4 + ' ' + out5 + ' ' + out6 + ' ' + out7)
+            out4 = str(format(dkgentot / float(seq), '.16f'))
+            out5 = str(format(dectot / float(seq), '.16f'))
+            f.write(out0 + '  ' + out1 + ' ' + out2 + ' ' + out3 + ' ' + out4 + ' ' + out5)
             f.write('\n')
 
 
