@@ -15,15 +15,12 @@
 # H3: GT -> Zp       H.hashtoZn()
 
 """
-import random
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
 from charm.toolbox.ABEncMultiAuth import ABEncMultiAuth
 import time
 import numpy as np
 from charm.toolbox.hash_module import Hash
 import sys
-import string
-import random
 
 sys.path.append('../')
 from common.image import *
@@ -34,22 +31,21 @@ from common.id import *
 class MJ18(ABEncMultiAuth):
     def __init__(self, groupObj, verbose=False):
         ABEncMultiAuth.__init__(self)
-        global group, ahnipe, util, H, mask, id_len, l
-
+        global group, ahnipe, util, H, mask, l
         group = groupObj
         util = MSP(group, verbose=False)
         H = Hash(group)
         mask = 'ed27dbfb02752e0e16bc4502d6c732bc5f1cc92ba19b2d93a4e95c597ca42753e93550b52f82b6c13fb8cc0c2fc64487'
-        id_len = 2
-        l = 50
+        l = 100
 
     def setup_aibbme(self):
         start = time.time()
+
         g, v = group.random(G1), group.random(G1)
         h = group.random(G2)
         r1n, r2n = random_array(l + 1), random_array(l + 1)
         t1, t2, beta1, beta2, alpha, rho = group.random(ZR, 6)
-        b, tau = group.random(ZR, 2)
+        b, tau = group.random(ZR), group.random(ZR)
 
         rn = r_func(l + 1, b, r1n, r2n)
         t = t1 + b * t2
@@ -103,7 +99,6 @@ class MJ18(ABEncMultiAuth):
         dk5 = msk["hbeta2"] * (pp['ht2'] ** z)
         dk6 = pp['h'] ** z
         dk7n = dk7_func(pp, rtagsn, id, z, ct)
-
         dk8n = dk8_func(pp, rtagsn, id, z, ct)
         dk = {'dk1': dk1, 'dk2': dk2, 'dk3': dk3, 'dk4': dk4, 'dk5': dk5, 'dk6': dk6, 'dk7n': dk7n, 'dk8n': dk8n,
               'rtagsn': rtagsn, 'z': z}
@@ -113,19 +108,20 @@ class MJ18(ABEncMultiAuth):
 
         return dk, rt
 
-    def enc_aibbme(self, pp, ek, id_num):
+    def enc_aibbme(self, pp, ek, n):
         start = time.time()
 
-        idj = idj_func(id_num)
+        idj = idj_func(n)
         H2idjtemp = H2idj_func(idj)
-        H2idj = cut_func(H2idjtemp, 2)
+        H2idj = H2idjtemp
+
         ytemp = coeff_func(H2idj)
         ye = yelement_func(ytemp)
         y = yelement_func(ytemp)
 
         m = group.random(GT)
-        s, d2ori, ctag = group.random(ZR, 3)
-        d2 = group.init(ZR, int(str(d2ori)[:5]))
+        s, d2, ctag = group.random(ZR, 3)
+        # print("enc d2:   ", d2)
 
         C0 = m * pp['X'] ** s
         C1 = pp["g"] ** s
@@ -133,7 +129,7 @@ class MJ18(ABEncMultiAuth):
         C3 = C3_func(pp, d2, s, ctag, ye)
         C4 = pp['v'] ** s
         Vidtemp = Vid_func(pp, ek, idj, s)
-        Vid = cut_func(Vidtemp, 2)
+        Vid = Vidtemp
 
         vidtemp = coeff_func(Vid)
         vidtemp1 = vidtemp
@@ -146,15 +142,14 @@ class MJ18(ABEncMultiAuth):
         rt = end - start
         return ct, m, rt
 
-    def dec_aibbme(self, pp, idstar, ct, dk):
+    def dec_aibbme(self, idstar, ct, dk):
         start = time.time()
 
-        Vidori = Vidj_func(dk, ct, idstar)
-        Vid = group.init(ZR, int(str(Vidori)[:2]))
+        Vid = Vidj_func(dk, ct, idstar)
         d2dec = ddec_func(ct, Vid)
-
+        # print("dec d2:   ", d2dec)
         rtagdec, y = rtagdec_func(ct, dk)
-        A = A_func(pp, ct, dk, y, d2dec, idstar)
+        A = A_func(ct, dk, y, d2dec)
         B = B_func(ct, dk)
         dec_msg = ((A ** (1 / (rtagdec - ct['ctag']))) * ct['C0']) / B
 
@@ -201,7 +196,7 @@ def H2(X):
 
 def H2toint(X):
     H = Hash(group)
-    return int(H.hashToZr(X))
+    return int2elment(int(H.hashToZr(X)))
 
 
 def H3(X):
@@ -232,38 +227,30 @@ def rtagsn_func(n):
 
 def dk7_func(pp, rtagsn, id, z, ct):
     dk7n = []
-    H2idcut = group.init(ZR, int(str(H2(id))[:2]))
+    H2idcut = int2elment(int(H2(id)))
 
     for i in range(1, len(ct['y'])):
         dk71 = (pp['ht1'] ** (rtagsn[i - 1])) * pp['hr1n'][i]
-        dk72 = pp['hr1n'][0] ** ((H2idcut) ** i)
+        dk72 = pp['hr1n'][0] ** (H2idcut ** group.init(ZR, i))
         dk7n.append((dk71 / dk72) ** z)
-
     return dk7n
 
 
 def dk8_func(pp, rtagsn, id, z, ct):
     dk8n = []
-    H2idcut = group.init(ZR, int(str(H2(id))[:2]))
+    H2idcut = int2elment(int(H2(id)))
 
     for i in range(1, len(ct['y'])):
         dk81 = (pp['ht2'] ** (rtagsn[i - 1])) * pp['hr2n'][i]
-        dk82 = pp['hr2n'][0] ** ((H2idcut) ** i)
+        dk82 = pp['hr2n'][0] ** (H2idcut ** group.init(ZR, i))
         dk8n.append((dk81 / dk82) ** z)
-
     return dk8n
 
 
-def id_generate_func(len):
-    res = ''.join(random.choices(string.ascii_uppercase +
-                                 string.digits, k=len))
-    return res
-
-
-def idj_func(id_num):
+def idj_func(n):
     res = []
-    for i in range(id_num):
-        res.append(id_generate_func(id_len))
+    for i in range(n):
+        res.append(id_generator(n))
     return res
 
 
@@ -271,13 +258,6 @@ def H2idj_func(idj):
     res = []
     for i in range(len(idj)):
         res.append(H2toint(idj[i]))
-    return res
-
-
-def cut_func(H2idjtemp, k):
-    res = []
-    for i in range(len(H2idjtemp)):
-        res.append(int(str(H2idjtemp[i])[:k]))
     return res
 
 
@@ -293,7 +273,7 @@ def coeff_func(H2idj):
 
 
 def bk_func(vidtemp1, d2):
-    vidtemp1[0] = vidtemp1[0] + d2
+    vidtemp1[0] = vidtemp1[0] + int(d2)
     return vidtemp1
 
 
@@ -302,13 +282,13 @@ def Vidj_func(dk, ct, idstar):
     a2 = pair(dk['dk2'], H1(idstar))
     a3 = pair(dk['dk1'], ct['C4'])
     res = H3(a1 * a2 * a3)
-    return res
+    return int2elment(int(res))
 
 
 def ddec_func(ct, Vid):
-    dd = 0
+    dd = group.init(ZR, 0)
     for i in range(len(ct['bk'])):
-        dd = dd + ct['bk'][i] * (Vid ** i)
+        dd = dd + ct['bk'][i] * (Vid ** group.init(ZR, i))
     res = int2elment(dd)
     return res
 
@@ -319,26 +299,23 @@ def int2elment(val):
 
 def rtagdec_func(ct, dk):
     H2idjtemp = H2idj_func(ct['idj'])
-    H2idj = cut_func(H2idjtemp, 2)
-    # print("dec H2idj: ", H2idj)
+    H2idj = H2idjtemp
 
     ytemp = coeff_func(H2idj)
     y = yelement_func(ytemp)
-    # print("dec y: ", y)
-
-    res = 0
+    res = group.init(ZR, 0)
     for i in range(1, len(y)):
         res = res + (dk['rtagsn'][i - 1] * y[i])
     return res, y
 
 
-def A_func(pp, ct, dk, y, d2dec, idstar):
-    A12 = 1
+def A_func(ct, dk, y, d2dec):
+    A12 = group.init(ZR, 1)
     for i in range(len(y) - 1):
         A12 = A12 * (dk['dk7n'][i] ** y[i + 1])
 
     a1 = pair(ct['C1'], A12)
-    A22 = 1
+    A22 = group.init(ZR, 1)
     for i in range(len(y) - 1):
         A22 = A22 * (dk['dk8n'][i] ** y[i + 1])
 
@@ -360,7 +337,7 @@ def yelement_func(ytemp):
 
 
 def C3_func(pp, d2, s, ctag, y):
-    res = 1
+    res = group.init(ZR, 1)
     for i in range(len(y)):
         res = res * (pp['R'][i] ** y[i])
     res = ((pp["T"] ** ctag) * res) ** (d2 * s)
@@ -372,13 +349,13 @@ def Vid_func(pp, ek, idj, s):
     for i in range(len(idj)):
         a1 = H0(idj[i])
         a2 = ek['ekid'] * (pp["gb"] ** s) * (pp['vrho'] ** s)
-        res.append(int(H3(pair(a1, a2))))
+        res.append(int2elment(int(H3(pair(a1, a2)))))
     return res
 
 
 def main():
     groupObj = PairingGroup('SS512')
-    n_array = np.arange(10, 14, 1)
+    n_array = np.arange(50, 100, 20)
     output_txt = './30_aibbme.txt'
     ahnipe = MJ18(groupObj)
 
@@ -392,23 +369,17 @@ def main():
             for j in range(seq):
                 n = n_array[i]
                 idstar = id_generator(n)
+                print('\n')
+                print('n, seq:   ', n, j)
 
                 pp, msk, setuptime = ahnipe.setup_aibbme()
                 ek, ekgentime = ahnipe.ekgen_aibbme(msk, idstar)
                 ct, m, enctime = ahnipe.enc_aibbme(pp, ek, n)
                 dk, dkgentime = ahnipe.dkgen_aibbme(pp, msk, ct['idj'][0], ct)
-                rec_msg, dectime = ahnipe.dec_aibbme(pp, idstar, ct, dk)
+                rec_msg, dectime = ahnipe.dec_aibbme(idstar, ct, dk)
 
-                print('\nn, seq:   ', n, j)
                 print("m:        ", m)
                 print("rec_msg1: ", rec_msg)
-
-                # m_inputkey = group.serialize(m).decode("utf-8")
-                # m_outputkey = group.serialize(rec_msg1).decode("utf-8")
-                # encrypt(m_inputkey)
-                # decrypt(m_outputkey)
-                # image.encrypt(m_inputkey)
-                # image.decrypt(m_outputkey)
 
                 sttot, ekgentot, enctot, dkgentot, dectot = sttot + setuptime, ekgentot + ekgentime, enctot + enctime, dkgentot + ekgentime, dectot + dectime
 
