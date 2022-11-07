@@ -121,7 +121,7 @@ class MJ18(ABEncMultiAuth):
 
         m = group.random(GT)
         s, d2, ctag = group.random(ZR, 3)
-        # print("enc d2:   ", d2)
+        print("enc d2:   ", d2)
 
         C0 = m * pp['X'] ** s
         C1 = pp["g"] ** s
@@ -147,7 +147,7 @@ class MJ18(ABEncMultiAuth):
 
         Vid = Vidj_func(dk, ct, idstar)
         d2dec = ddec_func(ct, Vid)
-        # print("dec d2:   ", d2dec)
+        print("dec d2:   ", d2dec)
         rtagdec, y = rtagdec_func(ct, dk)
         A = A_func(ct, dk, y, d2dec)
         B = B_func(ct, dk)
