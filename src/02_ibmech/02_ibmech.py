@@ -10,7 +10,9 @@ from charm.toolbox.matrixops import *
 from charm.toolbox.IBEnc import IBEnc
 import copy
 import time
+import sys
 
+sys.path.append('../')
 from common.parse import *
 
 class IBE_Chen12_z(IBEnc):

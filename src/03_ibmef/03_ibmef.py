@@ -113,7 +113,7 @@ def ext_func(pp, idstar):
 
 def main():
     groupObj = PairingGroup('SS512')
-    n_array = np.arange(5, 30, 5)
+    n_array = np.arange(5, 55, 5)
     output_txt= output_func('33_ibmef')
     ahnipe = MJ18(groupObj)
 

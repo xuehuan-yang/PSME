@@ -243,7 +243,7 @@ def C3_func(C3temp, m):
 
 def main():
     groupObj = PairingGroup('SS512')
-    n_array = np.arange(4, 50, 3)
+    n_array = np.arange(5, 55, 5)
     output_txt= output_func('31_psbme')
     ahnipe = MJ18(groupObj)
 
