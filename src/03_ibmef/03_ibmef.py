@@ -114,6 +114,7 @@ def ext_func(pp, idstar):
 def main():
     groupObj = PairingGroup('SS512')
     n_array = np.arange(5, 55, 5)
+    n_array = np.insert(n_array, 0, 1)
     output_txt= output_func('33_ibmef')
     ahnipe = MJ18(groupObj)
 
@@ -122,7 +123,7 @@ def main():
             "Seq SetupAveTime       ekgenAveTime       rkgenAveTime       encAVeTime         decAveTime         " + '\n')
 
         for i in range(len(n_array)):
-            seq = 2
+            seq = 5
             sttot, ekgentot, rkgentot, enctot, dectot = 0.0, 0.0, 0.0, 0.0, 0.0
             for j in range(seq):
                 n = n_array[i]
