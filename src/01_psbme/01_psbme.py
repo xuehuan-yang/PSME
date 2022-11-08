@@ -269,7 +269,7 @@ def main():
                 print("m:       ", m)
                 print("rec_msg: ", rec_msg)
 
-                sttot, ekgentot, enctot, dkgentot, dectot = sttot + setuptime, ekgentot + ekgentime, enctot + enctime, dkgentot + ekgentime, dectot + dectime
+                sttot, ekgentot, enctot, dkgentot, dectot = sttot + setuptime, ekgentot + ekgentime, enctot + enctime, dkgentot + dkgentime, dectot + dectime
 
             out0 = str(n).zfill(2)
             out1 = str(format(sttot / float(seq), '.16f'))
