@@ -253,7 +253,7 @@ def main():
             "Seq SetupAveTime       ekgenAveTime       EncAveTime         dkgenAVeTime       decAveTime        " + '\n')
 
         for i in range(len(n_array)):
-            seq = 1
+            seq = seq_func()
             sttot, ekgentot, enctot, dkgentot, dectot = 0.0, 0.0, 0.0, 0.0, 0.0
             for j in range(seq):
                 n = n_array[i]
@@ -268,6 +268,11 @@ def main():
 
                 print("m:       ", m)
                 print("rec_msg: ", rec_msg)
+
+                # m_inputkey = group.serialize(m).decode("utf-8")
+                # m_outputkey = group.serialize(rec_msg).decode("utf-8")
+                # encrypt(m_inputkey)
+                # decrypt(m_outputkey)
 
                 sttot, ekgentot, enctot, dkgentot, dectot = sttot + setuptime, ekgentot + ekgentime, enctot + enctime, dkgentot + dkgentime, dectot + dectime
 
