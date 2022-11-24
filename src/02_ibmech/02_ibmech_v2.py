@@ -1,9 +1,5 @@
 '''
-# change the default MNT224 to SS512 for the paper settings
-# group = PairingGroup('MNT224', secparam=1024)
-# group = PairingGroup('SS512', secparam=1024)
-#
-Shorter IBE and Signatures via Asymmetric Pairings
+# Shorter IBE and Signatures via Asymmetric Pairings
 '''
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
 from charm.toolbox.matrixops import *

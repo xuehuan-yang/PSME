@@ -1,4 +1,3 @@
-# https://github.com/cygnusv/matchmaking-encryption/blob/master/ibme.py
 
 from charm.toolbox.pairinggroup import ZR,G1,pair
 from charm.toolbox.hash_module import Hash

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-# https://github.com/cygnusv/matchmaking-encryption/blob/master/ibme.py
 # H0: {0, 1}* -> G0   H_prime()
 # H1: {0, 1}* -> G1   H_prime()
 
