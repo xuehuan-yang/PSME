@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 # message
 # H0: {0, 1}* -> G0   H_prime()

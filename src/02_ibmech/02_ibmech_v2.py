@@ -1,6 +1,3 @@
-'''
-# Shorter IBE and Signatures via Asymmetric Pairings
-'''
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
 from charm.toolbox.matrixops import *
 from charm.core.crypto.cryptobase import *
