@@ -110,3 +110,11 @@ cd ABE/
 pip install -e ./
 
 ```
+
+
+```bash
+# run sample
+conda activate charm
+cd ~/alphabet/charm/PSME/src/00_aibbme
+python 00_aibbme.py
+```
